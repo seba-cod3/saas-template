@@ -1,27 +1,30 @@
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { authClient } from '../lib/auth-client'
 
 export const Route = createFileRoute('/')({
-  component: RouteComponent,
+  component: HomePage,
 })
 
-const HEALT_API_URL = `${import.meta.env.VITE_API_URL}/health`
+function HomePage() {
+  const { data: session, isPending } = authClient.useSession()
 
-function RouteComponent() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['health'],
-    queryFn: () =>
-      fetch(HEALT_API_URL).then((res) => res.json()),
-  })
-
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error: {error.message}</div>
+  if (isPending) return <div>Loading...</div>
 
   return (
     <div>
       <h1>SaaS Template</h1>
-      <p>Server status: {data?.status}</p>
-      <p>Server time: {data?.timestamp}</p>
+      {session ? (
+        <div>
+          <p>Logged in as {session.user.name}</p>
+          <a href="/dashboard">Go to Dashboard</a>
+        </div>
+      ) : (
+        <div>
+          <a href="/login">Login</a>
+          {' | '}
+          <a href="/register">Register</a>
+        </div>
+      )}
     </div>
   )
 }
