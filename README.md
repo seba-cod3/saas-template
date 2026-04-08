@@ -32,3 +32,24 @@ pnpm run dev
 This will start the development server for the web app and the server.
 
 The web app will be available at http://localhost:5173 and the server will be available at http://localhost:3001.
+
+## Deploying to Production
+
+Recommended deploy strategie:
+
+- Railway (server)
+- Cloudflare Pages (frontend)
+- Neon (Postgres prod)
+- Redis (recommended Railway, optional Upstash) *
+
+
+* BullMQ does polling, so it needs a Redis instance to work, using Server+Redis inside Railway garanties a reliable and scalable Redis instance, plus cheaper on initial instances.
+In Railway Redis is included in the initial instance, so you can use it for free.
+Upstash could burn the same budget for Redis just by BullMQ polling to it.
+
+Remember to set the production environment variables in the server and web app.
+
+## TODO
+
+- [ ] Add a CI/CD pipeline
+- [ ] Add a production deployment script for each server to trigger the correspondant deployment
