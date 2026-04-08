@@ -8,9 +8,11 @@ export const authClient = createAuthClient({
       user: {
         organizationId: {
           type: 'string',
+          required: false,
         },
         role: {
           type: 'string',
+          required: false,
         },
       },
     }),

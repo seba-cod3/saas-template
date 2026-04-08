@@ -1,30 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { authClient } from '../lib/auth-client'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
 function HomePage() {
-  const { data: session, isPending } = authClient.useSession()
-
-  if (isPending) return <div>Loading...</div>
-
   return (
-    <div>
-      <h1>SaaS Template</h1>
-      {session ? (
-        <div>
-          <p>Logged in as {session.user.name}</p>
-          <a href="/dashboard">Go to Dashboard</a>
-        </div>
-      ) : (
-        <div>
-          <a href="/login">Login</a>
-          {' | '}
-          <a href="/register">Register</a>
-        </div>
-      )}
+    <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+      <h1 style={{ fontSize: '36px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
+        SaaS Template
+      </h1>
+      <p style={{ fontSize: '18px', color: '#6b7280', maxWidth: '480px', margin: '0 auto' }}>
+        A production-ready SaaS starter with authentication, multi-tenancy, and more.
+      </p>
     </div>
   )
 }
