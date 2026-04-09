@@ -1,96 +1,73 @@
-## SaaS Template
--- This is not even in alpha version, its a work in progress
+# SaaS Template
 
-This is a template for a SaaS Application.
+> **Not even alpha yet** — actively under development. Expect breaking changes.
 
-Its a turbo repo that contains:
+A production-ready SaaS starter as a Turborepo monorepo. Clone it, configure your env vars, and start building.
 
-1. Web App (SPA vite Using Tanstack Router)
-2. Server (Node.js using Hono and Better Auth)
-3. Database (PostgreSQL using Drizzle ORM)
-4. Authentication (Better Auth)
+## Features
 
--- WIP:
-- Middlewares
-- Redis with BullMQ for background tasks
-- Email handling on backend
-- Assets management (pipe on server to provider)
+- **Frontend** — Vite + React SPA with TanStack Router, TanStack Query, and React Compiler
+- **Backend** — Hono on Node.js with full TypeScript
+- **Authentication** — Better Auth (email/password + optional Google/GitHub OAuth)
+- **Database** — PostgreSQL 16 with Drizzle ORM and migrations
+- **Background Jobs** — BullMQ + Redis with type-safe `doLater()` pattern and auto-scaffolding
+- **Asset Storage** — Streaming upload/download (no disk temp files), adapter pattern (local dev, S3/R2 for prod)
+- **Caching** — `cached(key, ttl, fn)` utility backed by Redis
+- **Idempotency Guard** — Automatic duplicate request rejection (409) for mutations
+- **Shared Packages** — Zod validation schemas and constants shared between server and web
 
-To use it, you need to run
-
-```bash
-docker compose up -d
-```
-
-To set up the DB and redis, then run Turbo:
+## Getting Started
 
 ```bash
+docker compose up -d    # Postgres + Redis
 pnpm install
-pnpm run dev
+pnpm run dev            # Starts web (localhost:5173) and server (localhost:3001)
 ```
 
-This will start the development server for the web app and the server.
+Copy the example env files and adjust as needed:
 
-The web app will be available at http://localhost:5173 and the server will be available at http://localhost:3001.
+- `apps/server/.env.example`
+- `apps/web/.env.example`
+
+## Project Structure
+
+```
+apps/
+  server/         Hono API + Better Auth + BullMQ worker
+  web/            Vite React SPA + TanStack Router
+packages/
+  shared/         Zod schemas and constants
+  docs/           Setup guides (auth, storage, etc.)
+```
+
+## Documentation
+
+- [Authentication & OAuth setup](packages/docs/auth.md)
+- [S3/R2 Storage setup](packages/docs/storage-s3.md)
 
 ## Deploying to Production
 
-Recommended deploy strategie:
+Recommended strategy:
 
-- Railway (server)
-- Cloudflare Pages (frontend)
-- Neon (Postgres prod)
-- Redis (recommended Railway, optional Upstash) *
+| Service  | Provider                          |
+| -------- | --------------------------------- |
+| Server   | Railway / Fly.io                  |
+| Frontend | Cloudflare Pages / Vercel         |
+| Postgres | Neon                              |
+| Redis    | Railway (recommended) / Upstash * |
 
+\* BullMQ uses polling, so colocating Redis with the server on Railway is cheaper and more reliable. Railway includes Redis in the initial instance. Upstash can burn budget fast from BullMQ polling alone.
 
-* BullMQ does polling, so it needs a Redis instance to work, using Server+Redis inside Railway garanties a reliable and scalable Redis instance, plus cheaper on initial instances.
-In Railway Redis is included in the initial instance, so you can use it for free.
-Upstash could burn the same budget for Redis just by BullMQ polling to it.
+Remember to set the production environment variables in both `apps/server` and `apps/web`.
 
-Remember to set the production environment variables in the server and web app.
+## Roadmap
 
-## OAuth Providers (optional)
-
-OAuth login with Google and GitHub is supported but disabled by default. To enable it:
-
-### Google
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Create a new project (or select an existing one)
-3. Go to **APIs & Services > Credentials > Create Credentials > OAuth client ID**
-4. Select **Web application**
-5. Add `http://localhost:3001/api/auth/callback/google` to **Authorized redirect URIs** (replace with your production URL when deploying)
-6. Copy the **Client ID** and **Client Secret**
-
-### GitHub
-
-1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
-2. Click **New OAuth App**
-3. Set **Homepage URL** to `http://localhost:5173`
-4. Set **Authorization callback URL** to `http://localhost:3001/api/auth/callback/github`
-5. Copy the **Client ID** and generate a **Client Secret**
-
-### Environment variables
-
-Add to `apps/server/.env`:
-
-```env
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
-```
-
-Add to `apps/web/.env`:
-
-```env
-VITE_OAUTH_GOOGLE=true
-VITE_OAUTH_GITHUB=true
-```
-
-You can enable one or both providers independently. If no env vars are set, the OAuth buttons won't appear in the login/register modals.
-
-## TODO
-
-- [ ] Add a CI/CD pipeline
-- [ ] Add a production deployment script for each server to trigger the correspondant deployment
+- [ ] Middleware de timing de endpoints
+- [ ] AI proxy/streaming endpoint
+- [ ] HTTP client base class
+- [ ] Ownership validation helpers
+- [ ] Server Dockerfile
+- [ ] Postman collection
+- [ ] CI/CD pipeline
+- [ ] WebSockets support
+- [ ] Production deployment scripts
