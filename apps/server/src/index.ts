@@ -16,6 +16,7 @@ app.use('*', cors({
 }))
 
 app.use('*', idempotencyGuard())
+// app.use('*', timing()) // uncomment to enable endpoint timing logs
 
 app.on(['POST', 'GET'], '/api/auth/**', (c) => {
   return auth.handler(c.req.raw)
