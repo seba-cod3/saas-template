@@ -1,0 +1,423 @@
+{
+  "info": {
+    "name": "SaaS Template API",
+    "_postman_id": "saas-template-collection",
+    "description": "Postman collection for the SaaS Template server (Hono + Node.js). Base URL: http://localhost:3001.\n\nAuth flow: call Sign In to get a session cookie. All subsequent requests include credentials automatically via the `session_token` variable or cookie jar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "frontend_url",
+      "value": "http://localhost:5173",
+      "type": "string",
+      "description": "Must match trustedOrigins in auth.ts. Required by Better Auth CSRF protection on all POST requests."
+    },
+    {
+      "key": "session_token",
+      "value": "",
+      "type": "string",
+      "description": "Populated automatically after Sign In succeeds (via test script)"
+    },
+    {
+      "key": "asset_key",
+      "value": "",
+      "type": "string",
+      "description": "Populated automatically after Upload Asset succeeds (via test script)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Returns server status and current timestamp. No auth required."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/health" }
+              },
+              "body": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2026-04-09T12:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) {",
+                  "    pm.collectionVariables.set('session_token', body.token);",
+                  "  }",
+                  "  const cookie = pm.cookies.get('better-auth.session_token');",
+                  "  if (cookie) {",
+                  "    pm.collectionVariables.set('session_token', cookie);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{frontend_url}}", "description": "Required by Better Auth CSRF protection" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\",\n  \"name\": \"Test User\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/sign-up/email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sign-up", "email"]
+            },
+            "description": "Creates a new user account. On success, sets session cookie and `session_token` variable."
+          },
+          "response": [
+            {
+              "name": "200 Created",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/auth/sign-up/email" }
+              },
+              "body": "{\n  \"user\": {\n    \"id\": \"uuid\",\n    \"email\": \"user@example.com\",\n    \"name\": \"Test User\",\n    \"role\": \"member\",\n    \"organizationId\": null\n  },\n  \"token\": \"...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) {",
+                  "    pm.collectionVariables.set('session_token', body.token);",
+                  "  }",
+                  "  const cookie = pm.cookies.get('better-auth.session_token');",
+                  "  if (cookie) {",
+                  "    pm.collectionVariables.set('session_token', cookie);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Origin", "value": "{{frontend_url}}", "description": "Required by Better Auth CSRF protection" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/sign-in/email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sign-in", "email"]
+            },
+            "description": "Authenticates a user. On success, the session cookie is set and `session_token` variable is populated."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/auth/sign-in/email" }
+              },
+              "body": "{\n  \"user\": {\n    \"id\": \"uuid\",\n    \"email\": \"user@example.com\",\n    \"name\": \"Test User\",\n    \"role\": \"member\"\n  },\n  \"token\": \"...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{session_token}}",
+                "description": "Used as fallback if cookie jar is not available"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/get-session",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "get-session"]
+            },
+            "description": "Returns the current session and user data. Requires valid session (cookie or Bearer token)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/api/auth/session" }
+              },
+              "body": "{\n  \"session\": {\n    \"id\": \"uuid\",\n    \"userId\": \"uuid\",\n    \"expiresAt\": \"...\"\n  },\n  \"user\": {\n    \"id\": \"uuid\",\n    \"email\": \"user@example.com\",\n    \"name\": \"Test User\",\n    \"role\": \"member\",\n    \"organizationId\": null\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Sign Out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{session_token}}"
+              },
+              { "key": "Origin", "value": "{{frontend_url}}", "description": "Required by Better Auth CSRF protection" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/sign-out",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sign-out"]
+            },
+            "description": "Invalidates the current session and clears the session cookie."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/auth/sign-out" }
+              },
+              "body": "{\n  \"success\": true\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Assets",
+      "item": [
+        {
+          "name": "Upload Asset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.key) {",
+                  "    pm.collectionVariables.set('asset_key', body.key);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{session_token}}",
+                "description": "Used as fallback if cookie jar is not available"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select a file to upload (max 10 MB by default)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/assets",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assets"]
+            },
+            "description": "Uploads a file. Requires auth. Returns `id`, `key`, and `size`. The `key` is automatically saved to `asset_key` variable."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/assets" }
+              },
+              "body": "{\n  \"id\": \"uuid\",\n  \"key\": \"uuid.png\",\n  \"size\": 12345\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Asset",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/assets/{{asset_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assets", "{{asset_key}}"]
+            },
+            "description": "Downloads an asset by key. Requires auth. Streams the file directly with appropriate content-type headers."
+          },
+          "response": [
+            {
+              "name": "200 OK — binary stream",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/api/assets/{{asset_key}}" }
+              },
+              "body": "<binary file content>"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/api/assets/{{asset_key}}" }
+              },
+              "body": "{\n  \"message\": \"Asset not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Asset",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{session_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/assets/{{asset_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assets", "{{asset_key}}"]
+            },
+            "description": "Deletes an asset by key. Requires auth and ownership (403 if asset belongs to another user)."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{base_url}}/api/assets/{{asset_key}}" }
+              },
+              "body": ""
+            },
+            {
+              "name": "403 Forbidden",
+              "status": "Forbidden",
+              "code": 403,
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{base_url}}/api/assets/{{asset_key}}" }
+              },
+              "body": "{\n  \"message\": \"You do not own this asset\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "Trigger Test Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/test-job",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-job"]
+            },
+            "description": "Enqueues the `example-log` BullMQ background job. Temporary dev endpoint — remove before production."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/test-job" }
+              },
+              "body": "{\n  \"queued\": true\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
