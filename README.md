@@ -13,8 +13,9 @@ A production-ready SaaS starter as a Turborepo monorepo. Clone it, configure you
 - **Background Jobs** — BullMQ + Redis with type-safe `doLater()` pattern and auto-scaffolding
 - **Asset Storage** — Streaming upload/download (no disk temp files), adapter pattern (local dev, S3/R2 for prod)
 - **Caching** — `cached(key, ttl, fn)` utility backed by Redis
+- **WebSockets** — Real-time sync with typed channels shared between server and web, Redis Pub/Sub for multi-instance
 - **Idempotency Guard** — Automatic duplicate request rejection (409) for mutations
-- **Shared Packages** — Zod validation schemas and constants shared between server and web
+- **Shared Packages** — Zod validation schemas, WebSocket channels, and constants shared between server and web
 
 ---
 
@@ -49,6 +50,7 @@ packages/
 
 - [Authentication & OAuth setup](packages/docs/auth.md)
 - [S3/R2 Storage setup](packages/docs/storage-s3.md)
+- [WebSockets setup & usage](packages/docs/websockets.md)
 - [Server deploy & Docker guide](packages/docs/server.md)
 
 ## Deploying to Production
@@ -73,5 +75,4 @@ Remember to set the production environment variables in both `apps/server` and `
 - [ ] Ownership validation helpers
 - [ ] Postman collection
 - [ ] CI/CD pipeline
-- [ ] WebSockets support
 - [ ] Production deployment scripts
