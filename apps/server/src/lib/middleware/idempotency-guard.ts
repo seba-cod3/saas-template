@@ -35,8 +35,8 @@ export function idempotencyGuard(options: IdempotencyOptions = {}): MiddlewareHa
       return next()
     }
 
-    // Skip for asset uploads — multipart body can't be consumed with .text()
-    if (c.req.path.startsWith('/api/assets')) {
+    // Skip routes that read the raw Request body themselves
+    if (c.req.path.startsWith('/api/assets') || c.req.path.startsWith('/api/auth')) {
       return next()
     }
 
