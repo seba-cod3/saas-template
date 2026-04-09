@@ -16,6 +16,11 @@ A production-ready SaaS starter as a Turborepo monorepo. Clone it, configure you
 - **Idempotency Guard** — Automatic duplicate request rejection (409) for mutations
 - **Shared Packages** — Zod validation schemas and constants shared between server and web
 
+---
+
+- **Middleware de timing de endpoints**
+
+
 ## Getting Started
 
 ```bash
@@ -44,6 +49,7 @@ packages/
 
 - [Authentication & OAuth setup](packages/docs/auth.md)
 - [S3/R2 Storage setup](packages/docs/storage-s3.md)
+- [Server deploy & Docker guide](packages/docs/server.md)
 
 ## Deploying to Production
 
@@ -62,11 +68,9 @@ Remember to set the production environment variables in both `apps/server` and `
 
 ## Roadmap
 
-- [ ] Middleware de timing de endpoints
 - [ ] AI proxy/streaming endpoint
 - [ ] HTTP client base class
 - [ ] Ownership validation helpers
-- [ ] Server Dockerfile
 - [ ] Postman collection
 - [ ] CI/CD pipeline
 - [ ] WebSockets support
