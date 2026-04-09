@@ -6,6 +6,7 @@ import './jobs/index.js'
 import { auth } from './lib/auth.js'
 import { idempotencyGuard } from './lib/middleware/idempotency-guard.js'
 import { doLater, startWorker } from './lib/queue.js'
+import { assetRoutes } from './routes/assets.js'
 
 const app = new Hono()
 
@@ -19,6 +20,8 @@ app.use('*', idempotencyGuard())
 app.on(['POST', 'GET'], '/api/auth/**', (c) => {
   return auth.handler(c.req.raw)
 })
+
+app.route('/api/assets', assetRoutes)
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })

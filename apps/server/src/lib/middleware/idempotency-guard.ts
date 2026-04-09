@@ -35,6 +35,11 @@ export function idempotencyGuard(options: IdempotencyOptions = {}): MiddlewareHa
       return next()
     }
 
+    // Skip for asset uploads — multipart body can't be consumed with .text()
+    if (c.req.path.startsWith('/api/assets')) {
+      return next()
+    }
+
     const body = await c.req.text()
     const userId = options.getUserId?.(c) ?? null
     // Scope per user if authenticated, otherwise per IP
