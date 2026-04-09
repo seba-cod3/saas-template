@@ -2,9 +2,10 @@ import { serve } from '@hono/node-server'
 import 'dotenv/config'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { auth } from './lib/auth.js'
-import { doLater, startWorker } from './lib/queue.js'
 import './jobs/index.js'
+import { auth } from './lib/auth.js'
+import { idempotencyGuard } from './lib/middleware/idempotency-guard.js'
+import { doLater, startWorker } from './lib/queue.js'
 
 const app = new Hono()
 
@@ -12,6 +13,8 @@ app.use('*', cors({
   origin: process.env.CORS_ORIGIN_FRONTEND || 'http://localhost:5173',
   credentials: true,
 }))
+
+app.use('*', idempotencyGuard())
 
 app.on(['POST', 'GET'], '/api/auth/**', (c) => {
   return auth.handler(c.req.raw)
