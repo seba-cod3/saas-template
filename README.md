@@ -75,3 +75,21 @@ It's on the works, but not yet ready for production.
 - [ ] Admin dashboard
 - [ ] AI proxy/streaming endpoint
 - [ ] CI/CD pipeline
+
+## License
+
+This project is licensed under the [Business Source License 1.1](./LICENSE).
+
+**TL;DR**
+
+- **Free for non-production use** (evaluation, development, testing, research, personal projects) — always, for anyone, regardless of company size.
+- **Free for production use** as long as the aggregate annual revenue earned from any product, service, or offering built upon, derived from, or materially dependent on this software stays under **USD 20,000,000** (trailing twelve months).
+- **Internal-use applications don't count** toward the threshold, even in large organizations.
+- **Attribution required** — redistributions and products built on this software must preserve the [`NOTICE`](./NOTICE) file.
+- **Converts to Apache License 2.0** four years after each version is published.
+
+If your use exceeds the threshold above, or if you're interested in a **commercial license**, a **perpetual license**, or **source code acquisition**, I'd love to hear from you:
+
+**Contact:** [sebastiankoleff@gmail.com](mailto:sebastiankoleff@gmail.com)
+
+Whether you're a startup outgrowing the free tier, an enterprise looking for a license that fits your compliance process, or a team that wants to own a custom fork — reach out and we'll figure out terms that make sense for both sides.
