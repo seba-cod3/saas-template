@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { DEFAULT_ROLE, type UserRole } from "@repo/shared/auth";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -13,7 +14,7 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   organizationId: text("organization_id"),
-  role: text("role").default("member"),
+  role: text("role").$type<UserRole>().default(DEFAULT_ROLE).notNull(),
 });
 
 export const session = pgTable(

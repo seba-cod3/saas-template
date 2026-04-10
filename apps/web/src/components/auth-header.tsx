@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { canAccessBackoffice } from '@repo/shared/auth'
 import { authClient } from '../lib/auth-client'
 import { AuthModal } from './auth-modal'
 
@@ -58,6 +59,27 @@ export function AuthHeader() {
                   >
                     Profile
                   </button>
+                  <a
+                    href="/dashboard"
+                    style={{ ...styles.dropdownItem, textDecoration: 'none' }}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Dashboard
+                  </a>
+                  {canAccessBackoffice(session.user.role) && (
+                    <a
+                      href="/admin"
+                      style={{
+                        ...styles.dropdownItem,
+                        color: '#7c3aed',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                      }}
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Admin
+                    </a>
+                  )}
                   <button style={styles.dropdownItem} onClick={handleLogout}>
                     Log out
                   </button>

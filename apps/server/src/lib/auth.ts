@@ -1,9 +1,11 @@
 import { betterAuth } from 'better-auth'
 import type { BetterAuthOptions } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { AUTH } from '@repo/shared/auth'
+import { AUTH, DEFAULT_ROLE } from '@repo/shared/auth'
+import { WS_CHANNELS } from '@repo/shared/ws'
 import { db } from '../db/index.js'
 import * as authSchema from '../db/schema/auth-schema.js'
+import { broadcast } from './ws.js'
 
 const socialProviders: BetterAuthOptions['socialProviders'] = {}
 
@@ -42,7 +44,32 @@ export const auth = betterAuth({
       role: {
         type: 'string',
         required: false,
-        defaultValue: 'member',
+        defaultValue: DEFAULT_ROLE,
+        input: false, // clients cannot self-assign a role on signup
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (createdUser) => {
+          // Live feed for the admin dashboard.
+          await broadcast(
+            { channel: WS_CHANNELS.ADMINS },
+            {
+              type: 'user.created',
+              user: {
+                id: createdUser.id,
+                name: createdUser.name,
+                email: createdUser.email,
+                createdAt:
+                  createdUser.createdAt instanceof Date
+                    ? createdUser.createdAt.toISOString()
+                    : createdUser.createdAt,
+              },
+            },
+          )
+        },
       },
     },
   },

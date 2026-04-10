@@ -2,6 +2,13 @@
 // Add your channels here. Both frontend and backend import from this file.
 export const WS_CHANNELS = {
   TEST_NOTIFICATIONS: 'test-notifications',
+  /**
+   * Fan-out channel for admin dashboards. Server broadcasts here on
+   * events that any admin should see (e.g. user signups, system alerts).
+   * Per-role auth is enforced on subscribe-time via a WS handshake hook
+   * or simply by not surfacing the channel name to non-admin frontends.
+   */
+  ADMINS: 'admins',
 } as const
 
 export type WsChannel = (typeof WS_CHANNELS)[keyof typeof WS_CHANNELS]

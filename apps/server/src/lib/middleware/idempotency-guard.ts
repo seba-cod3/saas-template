@@ -35,8 +35,13 @@ export function idempotencyGuard(options: IdempotencyOptions = {}): MiddlewareHa
       return next()
     }
 
-    // Skip routes that read the raw Request body themselves
-    if (c.req.path.startsWith('/api/assets') || c.req.path.startsWith('/api/auth')) {
+    // Skip routes that read the raw Request body themselves (multipart /
+    // streaming / better-auth handler).
+    if (
+      c.req.path.startsWith('/api/assets') ||
+      c.req.path.startsWith('/api/auth') ||
+      /^\/api\/admin\/users\/[^/]+\/image$/.test(c.req.path)
+    ) {
       return next()
     }
 

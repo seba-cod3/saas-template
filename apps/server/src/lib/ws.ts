@@ -29,6 +29,13 @@ export function unregisterClient(ws: WSContext): void {
   }
 }
 
+/** Local WS client counts (this process only — multi-instance stats need Redis). */
+export function getLocalWsStats(): { clients: number; subscriptions: number } {
+  let subscriptions = 0
+  for (const c of clients) subscriptions += c.channels.size
+  return { clients: clients.size, subscriptions }
+}
+
 export function handleClientMessage(ws: WSContext, raw: string): void {
   const client = wsToClient.get(ws)
   if (!client) return
