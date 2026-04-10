@@ -40,3 +40,4 @@ dev_only
 
 # Symbolic links
 .claude-memory
+.claude-plans

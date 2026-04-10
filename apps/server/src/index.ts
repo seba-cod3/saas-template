@@ -6,30 +6,31 @@ import { cors } from 'hono/cors'
 import './jobs/index.js'
 import { auth } from './lib/auth.js'
 import { idempotencyGuard } from './lib/middleware/idempotency-guard.js'
-import { doLater, startWorker } from './lib/queue.js'
+import { startWorker } from './lib/queue.js'
 import { registerClient, unregisterClient, handleClientMessage } from './lib/ws.js'
 import { assetRoutes } from './routes/assets.js'
+import { healthRoutes } from './routes/health.js'
+import { testRoutes } from './routes/test.js'
 
 const app = new Hono()
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
+// Global middlewares
 app.use('*', cors({
   origin: process.env.CORS_ORIGIN_FRONTEND || 'http://localhost:5173',
   credentials: true,
 }))
-
 app.use('*', idempotencyGuard())
 // app.use('*', timing()) // uncomment to enable endpoint timing logs
 
-app.on(['POST', 'GET'], '/api/auth/**', (c) => {
-  return auth.handler(c.req.raw)
-})
-
-app.route('/api/assets', assetRoutes)
+// Non-RPC mounts — handled outside the chained RPC type:
+//   - Better Auth reads the raw Request and exposes no typed response.
+//   - /ws is a WebSocket upgrade handler, not a JSON endpoint.
+app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw))
 
 app.get(
   '/ws',
-  upgradeWebSocket((c) => ({
+  upgradeWebSocket(() => ({
     onOpen(_event, ws) {
       registerClient(ws)
     },
@@ -42,23 +43,14 @@ app.get(
   })),
 )
 
-app.get('/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() })
-})
+// RPC routes — the chained expression here is what hono/client consumes.
+// Add new feature routers with another `.route()` call.
+const routes = app
+  .route('/api/assets', assetRoutes)
+  .route('/health', healthRoutes)
+  .route('/api/test', testRoutes)
 
-// Test endpoints — remove when no longer needed
-app.post('/api/test-job', async (c) => {
-  await doLater('example-log', { message: 'Hello from background job!' })
-  return c.json({ queued: true })
-})
-
-app.post('/api/test-ws', async (c) => {
-  const { broadcast } = await import('./lib/ws.js')
-  const { WS_CHANNELS } = await import('@repo/shared/ws')
-  const body = await c.req.json()
-  await broadcast({ channel: WS_CHANNELS.TEST_NOTIFICATIONS }, body)
-  return c.json({ sent: true })
-})
+export type AppType = typeof routes
 
 startWorker()
 

@@ -19,83 +19,83 @@ async function requireUser(c: { req: { raw: Request } }) {
   return session.user
 }
 
+// Chained definition — required for hono/client RPC type inference.
+// Each .post/.get/.delete call returns a new app type; assigning the final
+// chained expression to `assetRoutes` captures all routes in the type.
 export const assetRoutes = new Hono()
+  // Upload — requires auth, creates record in assets table
+  .post(
+    '/',
+    bodyLimit({ maxSize: maxSizeMB * 1024 * 1024 }),
+    async (c) => {
+      const user = await requireUser(c)
+      const file = await extractFile(c)
 
-// Upload — requires auth, creates record in assets table
-assetRoutes.post(
-  '/',
-  bodyLimit({ maxSize: maxSizeMB * 1024 * 1024 }),
-  async (c) => {
+      const storage = await getStorage()
+      const id = crypto.randomUUID()
+      const extension = getExtension(file.name)
+      const key = `${id}${extension}`
+
+      const result = await storage.upload(key, file.stream(), {
+        contentType: file.type,
+        contentLength: file.size,
+      })
+
+      await db.insert(asset).values({
+        id,
+        key,
+        userId: user.id,
+        contentType: file.type,
+        extension,
+        size: result.size ?? file.size,
+      })
+
+      return c.json({ id, key, size: result.size }, 201)
+    },
+  )
+  // Download — requires auth, pipes stream directly
+  .get('/:key{.+}', async (c) => {
+    await requireUser(c)
+
+    const key = c.req.param('key')
+    const storage = await getStorage()
+
+    const exists = await storage.exists(key)
+    if (!exists) {
+      throw new HTTPException(404, { message: 'Asset not found' })
+    }
+
+    const result = await storage.download(key)
+
+    return new Response(result.stream, {
+      headers: {
+        ...(result.contentType && { 'content-type': result.contentType }),
+        ...(result.contentLength && { 'content-length': String(result.contentLength) }),
+      },
+    })
+  })
+  // Delete — requires auth + ownership
+  .delete('/:key{.+}', async (c) => {
     const user = await requireUser(c)
-    const file = await extractFile(c)
+    const key = c.req.param('key')
+
+    const [record] = await db
+      .select()
+      .from(asset)
+      .where(eq(asset.key, key))
+      .limit(1)
+
+    if (!record) {
+      throw new HTTPException(404, { message: 'Asset not found' })
+    }
+
+    if (record.userId !== user.id) {
+      throw new HTTPException(403, { message: 'You do not own this asset' })
+    }
 
     const storage = await getStorage()
-    const id = crypto.randomUUID()
-    const extension = getExtension(file.name)
-    const key = `${id}${extension}`
+    await storage.delete(key)
+    await db.delete(asset).where(eq(asset.key, key))
 
-    const result = await storage.upload(key, file.stream(), {
-      contentType: file.type,
-      contentLength: file.size,
-    })
-
-    await db.insert(asset).values({
-      id,
-      key,
-      userId: user.id,
-      contentType: file.type,
-      extension,
-      size: result.size ?? file.size,
-    })
-
-    return c.json({ id, key, size: result.size }, 201)
-  },
-)
-
-// Download — requires auth, pipes stream directly
-assetRoutes.get('/:key{.+}', async (c) => {
-  await requireUser(c)
-
-  const key = c.req.param('key')
-  const storage = await getStorage()
-
-  const exists = await storage.exists(key)
-  if (!exists) {
-    throw new HTTPException(404, { message: 'Asset not found' })
-  }
-
-  const result = await storage.download(key)
-
-  return new Response(result.stream, {
-    headers: {
-      ...(result.contentType && { 'content-type': result.contentType }),
-      ...(result.contentLength && { 'content-length': String(result.contentLength) }),
-    },
+    return c.body(null, 204)
   })
-})
-
-// Delete — requires auth + ownership
-assetRoutes.delete('/:key{.+}', async (c) => {
-  const user = await requireUser(c)
-  const key = c.req.param('key')
-
-  const [record] = await db
-    .select()
-    .from(asset)
-    .where(eq(asset.key, key))
-    .limit(1)
-
-  if (!record) {
-    throw new HTTPException(404, { message: 'Asset not found' })
-  }
-
-  if (record.userId !== user.id) {
-    throw new HTTPException(403, { message: 'You do not own this asset' })
-  }
-
-  const storage = await getStorage()
-  await storage.delete(key)
-  await db.delete(asset).where(eq(asset.key, key))
-
-  return c.body(null, 204)
-})

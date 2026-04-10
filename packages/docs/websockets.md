@@ -177,7 +177,7 @@ Once connected, subscribe to a channel:
 From another terminal:
 
 ```bash
-curl -X POST http://localhost:3001/api/test-ws \
+curl -X POST http://localhost:3001/api/test/ws \
   -H 'Content-Type: application/json' \
   -d '{"message":"hello from curl"}'
 ```
