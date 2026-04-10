@@ -1,6 +1,12 @@
 {
   "name": "@saas-template/server",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
   "scripts": {
     "jobs:scaffold": "tsx scripts/generate-jobs.ts",
     "dev": "tsx scripts/generate-jobs.ts --watch & tsx watch src/index.ts",
