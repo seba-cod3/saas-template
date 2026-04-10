@@ -56,7 +56,8 @@ export function idempotencyGuard(options: IdempotencyOptions = {}): MiddlewareHa
     }
 
     // Re-create the request body since we consumed it with .text()
-    c.req.bodyCache.text = body
+    // Hono's type says string, but runtime #cachedBody expects a Promise
+    ;(c.req.bodyCache as Record<string, unknown>).text = Promise.resolve(body)
 
     await next()
   }
