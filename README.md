@@ -70,9 +70,8 @@ Remember to set the production environment variables in both `apps/server` and `
 
 ## Roadmap
 
+It's on the works, but not yet ready for production.
+
+- [ ] Admin dashboard
 - [ ] AI proxy/streaming endpoint
-- [ ] HTTP client base class
-- [ ] Ownership validation helpers
-- [ ] Postman collection
 - [ ] CI/CD pipeline
-- [ ] Production deployment scripts
