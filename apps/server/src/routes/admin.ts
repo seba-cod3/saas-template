@@ -149,8 +149,10 @@ export const adminRoutes = new Hono()
   })
 
   // ── Change user photo ────────────────────────────────────────────────
-  // Uses the same storage pipeline as /api/assets, but the asset belongs
-  // to the *admin* that uploaded it (so ownership/quota stays sane). If you want to allow admins to "fix user avatar" change ownership
+  // Uses the same storage pipeline as /api/assets. The asset is registered
+  // under the *target* user's ownership so quota accounting stays correct
+  // and a future user-deletion cascade cleans it up automatically. The
+  // admin is just the uploader — they don't keep the blob on their quota.
   // The public URL is written to user.image.
   .post('/users/:id/image', async (c) => {
     const id = c.req.param('id')
@@ -169,8 +171,6 @@ export const adminRoutes = new Hono()
     const extension = getExtension(file.name)
     const key = `${assetId}${extension}`
 
-    const admin = c.get('sessionUser')
-
     const result = await storage.upload(key, file.stream(), {
       contentType: file.type,
       contentLength: file.size,
@@ -180,7 +180,7 @@ export const adminRoutes = new Hono()
       await db.insert(asset).values({
         id: assetId,
         key,
-        userId: admin.id,
+        userId: id,
         contentType: file.type,
         extension,
         size: result.size ?? file.size,
