@@ -9,17 +9,16 @@ A production-ready SaaS starter as a Turborepo monorepo. Clone it, configure you
 - **Frontend** — Vite + React SPA with TanStack Router, TanStack Query, and React Compiler
 - **Backend** — Hono on Node.js with full TypeScript
 - **Authentication** — Better Auth (email/password + optional Google/GitHub OAuth)
+- **Admin dashboard** — Role-gated backoffice with users table, health board, live WebSocket feed
 - **Database** — PostgreSQL 16 with Drizzle ORM and migrations
+- **AI Chat** — Multi-provider streaming (OpenAI + Anthropic) on the Vercel AI SDK v5, resumable streams over Redis, per-user tool scoping, token and cost tracking
 - **Background Jobs** — BullMQ + Redis with type-safe `doLater()` pattern and auto-scaffolding
 - **Asset Storage** — Streaming upload/download (no disk temp files), adapter pattern (local dev, S3/R2 for prod)
 - **Caching** — `cached(key, ttl, fn)` utility backed by Redis
 - **WebSockets** — Real-time sync with typed channels shared between server and web, Redis Pub/Sub for multi-instance
 - **Idempotency Guard** — Automatic duplicate request rejection (409) for mutations
-- **Shared Packages** — Zod validation schemas, WebSocket channels, and constants shared between server and web
-
----
-
-- **Middleware de timing de endpoints**
+- **Timing middleware** — Opt-in per-request latency logging with sub-millisecond precision
+- **Shared Packages** — Zod validation schemas, WebSocket channels, AI contracts, and constants shared between server and web
 
 
 ## Getting Started
@@ -49,6 +48,8 @@ packages/
 ## Documentation
 
 - [Authentication & OAuth setup](packages/docs/auth.md)
+- [AI Chat (streaming, tools, usage tracking)](packages/docs/ai.md)
+- [Event-driven jobs (BullMQ + `doLater`)](packages/docs/event-driven.md)
 - [S3/R2 Storage setup](packages/docs/storage-s3.md)
 - [WebSockets setup & usage](packages/docs/websockets.md)
 - [Server deploy & Docker guide](packages/docs/server.md)
@@ -72,8 +73,9 @@ Remember to set the production environment variables in both `apps/server` and `
 
 It's on the works, but not yet ready for production.
 
-- [ ] Admin dashboard
-- [ ] AI proxy/streaming endpoint
+- [ ] AI streaming — pt 2 (per-user monthly quota enforcement, client-side stop, tool-call UI, multimodal attachments)
+- [ ] Server hardening — rate limiting, error envelope, structured logging
+- [ ] Transactional email (password reset + opt-in mailer)
 - [ ] CI/CD pipeline
 
 ## License
