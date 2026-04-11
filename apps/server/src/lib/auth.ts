@@ -1,5 +1,6 @@
 import { AUTH, DEFAULT_ROLE } from '@repo/shared/auth'
 import { WS_CHANNELS } from '@repo/shared/ws'
+import type { AdminEvent } from '@repo/shared/ws'
 import type { BetterAuthOptions } from 'better-auth'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
@@ -69,22 +70,21 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (createdUser) => {
-          // Live feed for the admin dashboard.
-          await broadcast(
-            { channel: WS_CHANNELS.ADMINS },
-            {
-              type: 'user.created',
-              user: {
-                id: createdUser.id,
-                name: createdUser.name,
-                email: createdUser.email,
-                createdAt:
-                  createdUser.createdAt instanceof Date
-                    ? createdUser.createdAt.toISOString()
-                    : createdUser.createdAt,
-              },
+          // Live feed for the admin dashboard. Typed via AdminEvent so
+          // the shared wire shape stays in lockstep with the frontend.
+          const payload: AdminEvent = {
+            type: 'user.created',
+            user: {
+              id: createdUser.id,
+              name: createdUser.name,
+              email: createdUser.email,
+              createdAt:
+                createdUser.createdAt instanceof Date
+                  ? createdUser.createdAt.toISOString()
+                  : createdUser.createdAt,
             },
-          )
+          }
+          await broadcast({ channel: WS_CHANNELS.ADMINS }, payload)
         },
       },
     },

@@ -18,6 +18,19 @@ export const WS_CHANNELS = {
   USER: 'user',
 } as const
 
+// ---- Typed payloads for events on the ADMINS channel ----
+// Keep this union tight: any field a payload includes is visible to every
+// connected admin, so no secrets — just "what happened" summaries.
+export type AdminEvent = {
+  type: 'user.created'
+  user: {
+    id: string
+    name: string
+    email: string
+    createdAt: string
+  }
+}
+
 // ---- Typed payloads for session events on the USER channel ----
 // Kept here (not in auth) so the ws layer doesn't depend on auth.
 export type SessionEvent =

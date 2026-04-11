@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { USER_ROLES } from '@repo/shared/auth'
+import type { AdminEvent } from '@repo/shared/ws'
 import { WS_CHANNELS } from '@repo/shared/ws'
 import { api } from '../../../lib/api'
 import { useChannel } from '../../../lib/useChannel'
@@ -64,8 +65,12 @@ function AdminUsersPage() {
   })
 
   // Live feed — any new signup bumps a counter with a "refresh" CTA.
-  useChannel(WS_CHANNELS.ADMINS, () => {
-    setNewSignups((n) => n + 1)
+  // Payload is typed so you can surface the new user inline if you want
+  // (e.g. a toast with the name) without re-parsing the envelope.
+  useChannel<AdminEvent>(WS_CHANNELS.ADMINS, (event) => {
+    if (event.type === 'user.created') {
+      setNewSignups((n) => n + 1)
+    }
   })
 
   function applyNewSignups() {
