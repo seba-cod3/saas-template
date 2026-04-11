@@ -21,6 +21,22 @@ declare module 'hono' {
 }
 
 /**
+ * Gate a route by authentication only (any role is accepted).
+ * Stores session/sessionUser on context. Throws 401 when unauthenticated.
+ */
+export function requireAuth(): MiddlewareHandler {
+  return async (c, next) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if (!session) {
+      throw new HTTPException(401, { message: 'Unauthorized' })
+    }
+    c.set('session', session)
+    c.set('sessionUser', session.user as SessionUser)
+    await next()
+  }
+}
+
+/**
  * Gate a route (or sub-router) by role.
  *
  *   app.use('/admin/*', requireRole(['admin']))

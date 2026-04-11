@@ -15,6 +15,7 @@ import {
   unregisterClient,
 } from './lib/ws.js'
 import { adminRoutes } from './routes/admin.js'
+import { aiRoutes } from './routes/ai.js'
 import { assetRoutes } from './routes/assets.js'
 import { healthRoutes } from './routes/health.js'
 import { testRoutes } from './routes/test.js'
@@ -81,6 +82,7 @@ app.get(
 const routes = app
   .route('/api/assets', assetRoutes)
   .route('/api/admin', adminRoutes)
+  .route('/api/ai', aiRoutes)
   .route('/health', healthRoutes)
   .route('/api/test', testRoutes)
 

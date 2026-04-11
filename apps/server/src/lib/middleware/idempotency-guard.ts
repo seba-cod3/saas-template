@@ -36,10 +36,14 @@ export function idempotencyGuard(options: IdempotencyOptions = {}): MiddlewareHa
     }
 
     // Skip routes that read the raw Request body themselves (multipart /
-    // streaming / better-auth handler).
+    // streaming / better-auth handler) and AI chat streams (resumable streams
+    // must not be blocked by the 3s TTL guard — retries on stream reconnect
+    // would produce 409s and consecutive messages from the same user within
+    // 3s would be wrongly rejected as duplicates).
     if (
       c.req.path.startsWith('/api/assets') ||
       c.req.path.startsWith('/api/auth') ||
+      c.req.path.startsWith('/api/ai') ||
       /^\/api\/admin\/users\/[^/]+\/image$/.test(c.req.path)
     ) {
       return next()
