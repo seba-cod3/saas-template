@@ -74,6 +74,13 @@ export function AuthHeader() {
                   >
                     Dashboard
                   </a>
+                  <a
+                    href="/chat"
+                    style={{ ...styles.dropdownItem, textDecoration: 'none' }}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    AI Chat
+                  </a>
                   {canAccessBackoffice(session.user.role) && (
                     <a
                       href="/admin"
