@@ -1,10 +1,17 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { canAccessBackoffice } from '@repo/shared/auth'
 import { authClient } from '../lib/auth-client'
+import { sessionQueryOptions, SESSION_QUERY_KEY } from '../lib/session'
 import { AuthModal } from './auth-modal'
 
 export function AuthHeader() {
-  const { data: session, isPending } = authClient.useSession()
+  // Single source of truth: the shared TanStack Query cache. Replacing
+  // authClient.useSession() with this query means all components read
+  // from the same entry and a single WS invalidation / setQueryData
+  // updates every consumer at once.
+  const { data: session, isPending } = useQuery(sessionQueryOptions)
+  const qc = useQueryClient()
   const [modal, setModal] = useState<'login' | 'register' | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -20,6 +27,7 @@ export function AuthHeader() {
 
   async function handleLogout() {
     await authClient.signOut()
+    qc.setQueryData(SESSION_QUERY_KEY, null)
     setDropdownOpen(false)
     window.location.href = '/'
   }

@@ -5,11 +5,34 @@ export const WS_CHANNELS = {
   /**
    * Fan-out channel for admin dashboards. Server broadcasts here on
    * events that any admin should see (e.g. user signups, system alerts).
-   * Per-role auth is enforced on subscribe-time via a WS handshake hook
-   * or simply by not surfacing the channel name to non-admin frontends.
+   * Subscribe is gated server-side to sessions with role === 'admin'.
    */
   ADMINS: 'admins',
+  /**
+   * Private per-user channel. Used for session invalidation
+   * (session.refresh / session.revoked) and for any future "notify a
+   * specific user" flow. Always use with `entityId: userId`.
+   * Subscribe is gated server-side so a client can only subscribe to
+   * its own user id — never someone else's.
+   */
+  USER: 'user',
 } as const
+
+// ---- Typed payloads for session events on the USER channel ----
+// Kept here (not in auth) so the ws layer doesn't depend on auth.
+export type SessionEvent =
+  /**
+   * Re-fetch the session. Cookie cache may still return stale data for
+   * up to `cookieCache.maxAge` — if you need true freshness across the
+   * refresh, the server should also drop the session row first.
+   */
+  | { type: 'session.refresh' }
+  /**
+   * Kill the session. Client should call signOut() and redirect to "/".
+   * Backend must have already revoked the DB session before broadcasting
+   * this, otherwise a reload would re-authenticate the user.
+   */
+  | { type: 'session.revoked'; reason?: string }
 
 export type WsChannel = (typeof WS_CHANNELS)[keyof typeof WS_CHANNELS]
 

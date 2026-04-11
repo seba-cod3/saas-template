@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
 import { createNodeWebSocket } from '@hono/node-ws'
+import { WS_CHANNELS, channelKey } from '@repo/shared/ws'
 import 'dotenv/config'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
@@ -7,7 +8,12 @@ import './jobs/index.js'
 import { auth } from './lib/auth.js'
 import { idempotencyGuard } from './lib/middleware/idempotency-guard.js'
 import { startWorker } from './lib/queue.js'
-import { registerClient, unregisterClient, handleClientMessage } from './lib/ws.js'
+import {
+  handleClientMessage,
+  registerClient,
+  sendToSocket,
+  unregisterClient,
+} from './lib/ws.js'
 import { adminRoutes } from './routes/admin.js'
 import { assetRoutes } from './routes/assets.js'
 import { healthRoutes } from './routes/health.js'
@@ -31,17 +37,43 @@ app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw))
 
 app.get(
   '/ws',
-  upgradeWebSocket(() => ({
-    onOpen(_event, ws) {
-      registerClient(ws)
-    },
-    onMessage(event, ws) {
-      handleClientMessage(ws, String(event.data))
-    },
-    onClose(_event, ws) {
-      unregisterClient(ws)
-    },
-  })),
+  upgradeWebSocket(async (c) => {
+    // Resolve the better-auth session from the upgrade request cookies
+    // *once*, and carry the identity into the socket's lifecycle. This
+    // is what powers:
+    //   - subscribe gating (user:<id> + admins)
+    //   - the auto-refresh push on connect
+    //   - targeted sendToUser() from session-ops
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    const identity = {
+      userId: session?.user.id ?? null,
+      role: (session?.user as { role?: string | null } | undefined)?.role ?? null,
+    }
+
+    return {
+      onOpen(_event, ws) {
+        registerClient(ws, identity)
+
+        // Fresh tab / reconnect from an authenticated user → push a
+        // session.refresh *immediately* so the frontend invalidates its
+        // TanStack Query cache and fetches a fresh session. This is the
+        // "every first connection from frontend fires a refetch" contract.
+        if (identity.userId) {
+          sendToSocket(
+            ws,
+            channelKey(WS_CHANNELS.USER, identity.userId),
+            { type: 'session.refresh' as const },
+          )
+        }
+      },
+      onMessage(event, ws) {
+        handleClientMessage(ws, String(event.data))
+      },
+      onClose(_event, ws) {
+        unregisterClient(ws)
+      },
+    }
+  }),
 )
 
 // RPC routes — the chained expression here is what hono/client consumes.

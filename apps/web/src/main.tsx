@@ -5,7 +5,14 @@ import { createRoot } from 'react-dom/client'
 import { routeTree } from './routeTree.gen'
 
 const queryClient = new QueryClient()
-const router = createRouter({ routeTree })
+
+// `queryClient` lives on the router context so that `beforeLoad` loaders
+// can call `context.queryClient.ensureQueryData(...)`. That's how we turn
+// imperative `authClient.getSession()` calls into a single cached query.
+const router = createRouter({
+  routeTree,
+  context: { queryClient },
+})
 
 declare module '@tanstack/react-router' {
   interface Register {

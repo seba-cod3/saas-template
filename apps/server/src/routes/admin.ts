@@ -10,6 +10,7 @@ import { auth } from '../lib/auth.js'
 import { cached } from '../lib/cache.js'
 import { requireRole } from '../lib/middleware/require-role.js'
 import { redis } from '../lib/redis.js'
+import { revokeUserSessions } from '../lib/session-ops.js'
 import { extractFile, getExtension } from '../lib/storage/helpers.js'
 import { getStorage } from '../lib/storage/index.js'
 import { getLocalWsStats } from '../lib/ws.js'
@@ -226,7 +227,37 @@ export const adminRoutes = new Hono()
 
     await invalidateUsersCache()
 
+    // Hard-invalidate: kills DB sessions + pushes session.revoked over
+    // WS. The user is bounced to "/" and has to re-login, which guarantees
+    // a clean session with the new role (no cookie cache staleness).
+    // Softer alternative would be `notifyUserSessionChanged(id)` which
+    // only asks the frontend to refetch — but then the refetch can hit
+    // the still-valid cookie cache and see the OLD role for up to maxAge.
+    await revokeUserSessions(id, 'role-changed')
+
     return c.json({ ok: true, role: body.role })
+  })
+
+  // ── Force logout a user ───────────────────────────────────────────────
+  // Admin button for "kick this user out right now". Same primitive as
+  // the role-change flow: delete session rows + WS push.
+  .post('/users/:id/force-logout', async (c) => {
+    const id = c.req.param('id')
+
+    const [target] = await db.select().from(user).where(eq(user.id, id)).limit(1)
+    if (!target) {
+      throw new HTTPException(404, { message: 'User not found' })
+    }
+
+    const admin = c.get('sessionUser')
+    if (admin.id === id) {
+      throw new HTTPException(400, {
+        message: 'Use the logout button for your own session',
+      })
+    }
+
+    await revokeUserSessions(id, 'admin-kicked')
+    return c.json({ ok: true })
   })
 
   // ── Health dashboard ─────────────────────────────────────────────────

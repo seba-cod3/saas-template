@@ -1,22 +1,28 @@
+import type { WsChannel, WsClientMessage, WsEnvelope } from '@repo/shared/ws'
+import { channelKey, WS_CHANNELS } from '@repo/shared/ws'
 import type { WSContext } from 'hono/ws'
 import { Redis as IORedis } from 'ioredis'
-import { channelKey } from '@repo/shared/ws'
-import type { WsChannel, WsClientMessage, WsEnvelope } from '@repo/shared/ws'
 
 const REDIS_PREFIX = 'ws:'
 
 // ---- Client tracking ----
 
+export interface ClientIdentity {
+  userId: string | null
+  role: string | null
+}
+
 interface ConnectedClient {
   ws: WSContext
   channels: Set<string>
+  identity: ClientIdentity
 }
 
 const clients = new Set<ConnectedClient>()
 const wsToClient = new WeakMap<WSContext, ConnectedClient>()
 
-export function registerClient(ws: WSContext): void {
-  const client: ConnectedClient = { ws, channels: new Set() }
+export function registerClient(ws: WSContext, identity: ClientIdentity): void {
+  const client: ConnectedClient = { ws, channels: new Set(), identity }
   clients.add(client)
   wsToClient.set(ws, client)
 }
@@ -36,6 +42,26 @@ export function getLocalWsStats(): { clients: number; subscriptions: number } {
   return { clients: clients.size, subscriptions }
 }
 
+// ---- Subscribe authorization ----
+// Allowlist of channels a given identity can subscribe to. Anything not
+// matched is rejected. Keeps the protocol simple: unknown channel = deny.
+function canSubscribe(channel: string, identity: ClientIdentity): boolean {
+  if (channel === WS_CHANNELS.TEST_NOTIFICATIONS) return true // TODO: Remove this after WS testing completion.
+
+  if (channel === WS_CHANNELS.ADMINS) {
+    return identity.role === 'admin'
+  }
+
+  // Private per-user channel `user:<id>` — only the owner may subscribe.
+  if (channel.startsWith(`${WS_CHANNELS.USER}:`)) {
+    if (!identity.userId) return false
+    return channel === `${WS_CHANNELS.USER}:${identity.userId}`
+  }
+
+  // Unknown channel → deny by default.
+  return false
+}
+
 export function handleClientMessage(ws: WSContext, raw: string): void {
   const client = wsToClient.get(ws)
   if (!client) return
@@ -43,6 +69,10 @@ export function handleClientMessage(ws: WSContext, raw: string): void {
   try {
     const msg: WsClientMessage = JSON.parse(raw)
     if (msg.type === 'subscribe') {
+      if (!canSubscribe(msg.channel, client.identity)) {
+        // Silently ignore unauthorized subscribes. The socket stays up.
+        return
+      }
       client.channels.add(msg.channel)
       ensureRedisSubscription(msg.channel)
     } else if (msg.type === 'unsubscribe') {
@@ -50,6 +80,20 @@ export function handleClientMessage(ws: WSContext, raw: string): void {
     }
   } catch {
     // Invalid message, ignore
+  }
+}
+
+/** Send an envelope directly to one socket (no Redis round-trip). */
+export function sendToSocket<T = unknown>(
+  ws: WSContext,
+  channel: string,
+  payload: T,
+): void {
+  const envelope: WsEnvelope<T> = { channel, payload }
+  try {
+    ws.send(JSON.stringify(envelope))
+  } catch {
+    // Client already gone — cleanup happens on close
   }
 }
 

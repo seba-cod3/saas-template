@@ -1,6 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { loginSchema, registerSchema } from '@repo/shared/auth'
 import { authClient } from '../lib/auth-client'
+import { SESSION_QUERY_KEY } from '../lib/session'
 
 type Mode = 'login' | 'register'
 
@@ -15,6 +17,7 @@ const githubEnabled = import.meta.env.VITE_OAUTH_GITHUB === 'true'
 const hasOAuth = googleEnabled || githubEnabled
 
 export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps) {
+  const qc = useQueryClient()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -95,6 +98,12 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps) {
         return
       }
     }
+
+    // Invalidate the canonical session query so every subscriber
+    // (AuthHeader, _authenticated layout, etc.) refetches from the
+    // server and picks up the fresh cookie. Await so the new session
+    // is in cache before we navigate — avoids a flash of logged-out UI.
+    await qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY })
 
     onClose()
     window.location.href = '/dashboard'
