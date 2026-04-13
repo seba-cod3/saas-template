@@ -25,9 +25,17 @@ A production-ready SaaS starter as a Turborepo monorepo. Clone it, configure you
 ## Getting Started
 
 ```bash
-docker compose up -d    # Postgres + Redis
+docker compose up -d    # Postgres + Redis + Mailpit
 pnpm install
-pnpm run dev            # Starts web (localhost:5173) and server (localhost:3001)
+cd apps/server && pnpm db:generate && pnpm db:migrate # Create and apply migrations
+pnpm dev            # Starts web (localhost:5173) and server (localhost:3001)
+```
+
+### Local development after initialization
+
+```bash
+docker compose up -d
+pnpm dev
 ```
 
 Copy the example env files and adjust as needed:
@@ -66,18 +74,25 @@ Recommended strategy:
 | Frontend | Cloudflare Pages / Vercel         |
 | Postgres | Neon                              |
 | Redis    | Railway (recommended) / Upstash * |
+| Email    | SMTP Server (Brevo / Resend)      |
 
 \* BullMQ uses polling, so colocating Redis with the server on Railway is cheaper and more reliable. Railway includes Redis in the initial instance. Upstash can burn budget fast from BullMQ polling alone.
 
 Remember to set the production environment variables in both `apps/server` and `apps/web`.
 
+Delete or harden the `apps/server/src/routes` (tests and health).
+Verify `.env` PORTs
+Remove what you don't need, and enhance what you need.
+
 ## Roadmap
 
-It's on the works, but not yet ready for production.
-
+- [ ] Email service — pt 2 (verification emails)
 - [ ] AI streaming — pt 2 (per-user monthly quota enforcement, client-side stop, tool-call UI, multimodal attachments)
 - [ ] Server hardening — rate limiting, error envelope, structured logging
 - [ ] CI/CD pipeline
+- [ ] App mobile package (Expo + RN)
+- [ ] Enhancements to display PWA
+- [ ] Agents and skills strategy for each package
 
 ## License
 
