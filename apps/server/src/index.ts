@@ -4,6 +4,7 @@ import { WS_CHANNELS, channelKey } from '@repo/shared/ws'
 import 'dotenv/config'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { HTTPException } from 'hono/http-exception'
 import './jobs/index.js'
 import { auth } from './lib/auth.js'
 import { idempotencyGuard } from './lib/middleware/idempotency-guard.js'
@@ -22,6 +23,17 @@ import { testRoutes } from './routes/test.js'
 
 const app = new Hono()
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
+
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return err.getResponse()
+  }
+  if (err instanceof SyntaxError) {
+    return c.json({ error: 'Invalid JSON in request body' }, 400)
+  }
+  console.error('[server] Unhandled error:', err)
+  return c.json({ error: 'Internal server error' }, 500)
+})
 
 // Global middlewares
 app.use('*', cors({

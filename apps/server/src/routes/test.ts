@@ -14,3 +14,8 @@ export const testRoutes = new Hono()
     await broadcast({ channel: WS_CHANNELS.TEST_NOTIFICATIONS }, body)
     return c.json({ sent: true })
   })
+  .post('/email', async (c) => {
+    const { to, subject, html } = await c.req.json<{ to: string; subject: string; html: string }>()
+    await doLater('send-email', { to, subject, html })
+    return c.json({ queued: true })
+  })
