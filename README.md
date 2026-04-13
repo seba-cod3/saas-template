@@ -16,6 +16,7 @@ A production-ready SaaS starter as a Turborepo monorepo. Clone it, configure you
 - **Asset Storage** — Streaming upload/download (no disk temp files), adapter pattern (local dev, S3/R2 for prod)
 - **Caching** — `cached(key, ttl, fn)` utility backed by Redis
 - **WebSockets** — Real-time sync with typed channels shared between server and web, Redis Pub/Sub for multi-instance
+- **Email** — Transactional and broadcast email via Nodemailer + SMTP. Mailpit included for local development. Swap to any provider (Resend, Brevo, SES) with env vars only
 - **Idempotency Guard** — Automatic duplicate request rejection (409) for mutations
 - **Timing middleware** — Opt-in per-request latency logging with sub-millisecond precision
 - **Shared Packages** — Zod validation schemas, WebSocket channels, AI contracts, and constants shared between server and web
@@ -49,6 +50,7 @@ packages/
 
 - [Authentication & OAuth setup](packages/docs/auth.md)
 - [AI Chat (streaming, tools, usage tracking)](packages/docs/ai.md)
+- [Email (Nodemailer, templates, providers)](packages/docs/email.md)
 - [Event-driven jobs (BullMQ + `doLater`)](packages/docs/event-driven.md)
 - [S3/R2 Storage setup](packages/docs/storage-s3.md)
 - [WebSockets setup & usage](packages/docs/websockets.md)
@@ -75,7 +77,6 @@ It's on the works, but not yet ready for production.
 
 - [ ] AI streaming — pt 2 (per-user monthly quota enforcement, client-side stop, tool-call UI, multimodal attachments)
 - [ ] Server hardening — rate limiting, error envelope, structured logging
-- [ ] Transactional email (password reset + opt-in mailer)
 - [ ] CI/CD pipeline
 
 ## License
